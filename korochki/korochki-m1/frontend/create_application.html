@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Запись на мастер-класс</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container" style="max-width: 500px;">
+        <h2>Запись на мастер-класс</h2>
+        <form id="appForm">
+            <div class="form-group">
+                <label>Выберите мастер-класс</label>
+                <select id="workshop" required></select>
+            </div>
+            <div class="form-group">
+                <label>Дата начала</label>
+                <input type="date" id="start_date" required>
+            </div>
+            <div class="form-group">
+                <label>Способ оплаты</label>
+                <select id="payment" required></select>
+            </div>
+            <button type="submit">Подать заявку</button>
+            <div id="error" class="error"></div>
+        </form>
+        <button class="btn-secondary" onclick="window.location.href='applications.html'">Отмена</button>
+    </div>
+
+    <script>
+        const userId = sessionStorage.getItem('user_id');
+        if (!userId) window.location.href = 'login.html';
+
+        async function initData() {
+            const resWorkshops = await fetch('http://127.0.0.1:5000/api/workshops');
+            const workshops = await resWorkshops.json();
+            const selectW = document.getElementById('workshop');
+            
+            workshops.forEach(w => {
+                const opt = document.createElement('option');
+                opt.value = w.id;
+                opt.innerText = `${w.topic} (${w.age_min}-${w.age_max} лет) — Мест: ${w.place_count}`;
+                if (w.place_count <= 0) opt.disabled = true;
+                selectW.appendChild(opt);
+            });
+
+            const resPayments = await fetch('http://127.0.0.1:5000/api/payment_methods');
+            const payments = await resPayments.json();
+            const selectP = document.getElementById('payment');
+            
+            payments.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.innerText = p.name;
+                selectP.appendChild(opt);
+            });
+        }
+
+        document.getElementById('appForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const workshop_id = document.getElementById('workshop').value;
+            const start_date = document.getElementById('start_date').value;
+            const payment_method_id = document.getElementById('payment').value;
+            const errorDiv = document.getElementById('error');
+
+            const res = await fetch('http://127.0.0.1:5000/api/applications', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: userId,
+                    workshop_id,
+                    start_date,
+                    payment_method_id
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                alert('Заявка успешно создана!');
+                window.location.href = 'applications.html';
+            } else {
+                errorDiv.innerText = data.error || ' Ошибка создания заявки';
+            }
+        });
+
+        initData();
+    </script>
+</body>
+</html>

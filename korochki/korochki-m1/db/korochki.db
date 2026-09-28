@@ -1,0 +1,92 @@
+
+CREATE DATABASE IF NOT EXISTS korochki CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE korochki;
+
+
+CREATE TABLE IF NOT EXISTS roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+) ENGINE=InnoDB;
+
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    login VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    role_id INT NOT NULL,
+    FOREIGN KEY (role_id) REFERENCES roles(id)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE IF NOT EXISTS payment_methods (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+) ENGINE=InnoDB;
+
+
+CREATE TABLE IF NOT EXISTS application_statuses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+) ENGINE=InnoDB;
+
+
+CREATE TABLE IF NOT EXISTS workshops (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    topic VARCHAR(200) NOT NULL,
+    age_min INT NOT NULL,
+    age_max INT NOT NULL,
+    place_count INT NOT NULL,
+    start_at DATETIME NOT NULL,
+    video_url VARCHAR(255)
+) ENGINE=InnoDB;
+
+
+CREATE INDEX idx_workshops_start_place ON workshops(start_at, place_count);
+
+CREATE TABLE IF NOT EXISTS applications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    workshop_id INT NOT NULL, 
+    start_date DATE NOT NULL,
+    payment_method_id INT NOT NULL,
+    status_id INT NOT NULL DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (workshop_id) REFERENCES workshops(id),
+    FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id),
+    FOREIGN KEY (status_id) REFERENCES application_statuses(id)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE IF NOT EXISTS reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    text TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB;
+
+
+INSERT INTO roles (name) VALUES ('guest'), ('user'), ('admin');
+
+INSERT INTO payment_methods (name) VALUES ('Наличные'), ('Банковская карта'), ('СБП');
+
+INSERT INTO application_statuses (name) VALUES ('Новая'), ('Идёт обучение'), ('Обучение завершено');
+
+INSERT INTO roles (name) VALUES ('operator');
+
+INSERT INTO users (login, password_hash, full_name, phone, email, role_id) 
+VALUES ('operator', 'scrypt:32768:8:1$F3x...', 'Менеджер кружка', '8(999)111-22-33', 'operator@korochki.ru', 4);
+
+INSERT INTO workshops (topic, age_min, age_max, place_count, start_at, video_url) VALUES 
+('Основы робототехники (Lego Mindstorms)', 8, 12, 10, '2026-07-15 10:00:00', 'lego.mp4'),
+('Программирование Arduino', 12, 16, 5, '2026-07-20 14:00:00', 'arduino.mp4'),
+('Сборка дронов', 14, 18, 2, '2026-08-01 12:00:00', 'drone.mp4'),
+('Соревнования роботов-сумо', 10, 16, 20, '2026-08-15 10:00:00', 'robot.mp4'); 
+
+
+INSERT INTO users (login, password_hash, full_name, phone, email, role_id) VALUES 
+('Admin', 'scrypt:32768:8:1$F3x', 'Администратор', '8(999)000-00-00', 'admin@korochki.ru', 3);

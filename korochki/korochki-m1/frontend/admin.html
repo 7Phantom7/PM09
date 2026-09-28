@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель администратора</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container" style="max-width: 1000px;">
+        <div class="header-actions">
+            <h2>Панель администратора</h2>
+            <button class="btn-secondary" onclick="logout()">Выход</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Пользователь</th>
+                    <th>ФИО</th>
+                    <th>Мастер-класс</th>
+                    <th>Дата</th>
+                    <th>Оплата</th>
+                    <th>Статус</th>
+                    <th>Действие</th>
+                </tr>
+            </thead>
+            <tbody id="adminTable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const roleId = sessionStorage.getItem('role_id');
+        if (roleId !== '3' && roleId !== '4') window.location.href = 'login.html';
+
+        async function loadAdminApplications() {
+            const res = await fetch('http://127.0.0.1:5000/api/admin/applications');
+            const apps = await res.json();
+            const tbody = document.getElementById('adminTable');
+            tbody.innerHTML = '';
+
+            apps.forEach(app => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${app.id}</td>
+                    <td>${app.login}</td>
+                    <td>${app.full_name}</td>
+                    <td>${app.course_name}</td>
+                    <td>${app.start_date}</td>
+                    <td>${app.payment_method}</td>
+                    <td><b>${app.status}</b></td>
+                    <td>
+                        <select onchange="updateStatus(${app.id}, this.value)">
+                            <option value="1" ${app.status_id == 1 ? 'selected' : ''}>Новая</option>
+                            <option value="2" ${app.status_id == 2 ? 'selected' : ''}>Идёт обучение</option>
+                            <option value="3" ${app.status_id == 3 ? 'selected' : ''}>Обучение завершено</option>
+                        </select>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function updateStatus(appId, statusId) {
+            await fetch(`http://127.0.0.1:5000/api/admin/applications/${appId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status_id: statusId })
+            });
+            loadAdminApplications();
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        loadAdminApplications();
+    </script>
+</body>
+</html>

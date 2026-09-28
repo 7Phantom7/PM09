@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Портфолио проектов и Мастер-классы</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .card { 
+    background: #fff; 
+    padding: 15px; 
+    border-radius: 8px; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+    
+    display: flex;
+    flex-direction: column;
+}
+.card h3 {
+    
+    min-height: 2.6em;
+    margin-bottom: 8px;
+    font-size: 1.05rem;
+}
+video { 
+    width: 100%; 
+    aspect-ratio: 16 / 9; 
+    object-fit: cover; 
+    border-radius: 4px; 
+    
+    margin-top: auto; 
+    padding-top: 10px;
+}
+        .load-more { display: block; margin: 20px auto; width: 200px; }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 1000px;">
+        <div class="header-actions">
+            <h2>Наши мастер-классы и проекты</h2>
+            <button class="btn-secondary" onclick="window.location.href='login.html'">Вход / Кабинет</button>
+        </div>
+
+        <div id="portfolioGrid" class="grid"></div>
+        <button id="loadMoreBtn" class="load-more" onclick="loadWorkshops()">Загрузить еще</button>
+    </div>
+
+    <script>
+        let lastId = 0;
+
+        async function loadWorkshops() {
+            const btn = document.getElementById('loadMoreBtn');
+            btn.innerText = 'Загрузка...';
+            
+            // Запрос с курсорной пагинацией
+            const res = await fetch(`http://127.0.0.1:5000/api/workshops?last_id=${lastId}&limit=2`);
+            const workshops = await res.json();
+            
+            const grid = document.getElementById('portfolioGrid');
+            
+            if (workshops.length === 0) {
+                btn.style.display = 'none';
+                return;
+            }
+
+            workshops.forEach(w => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                // ключевая оптимизация preload="metadata"
+                card.innerHTML = `
+                    <h3>${w.topic}</h3>
+                    <p>Возраст: ${w.age_min}-${w.age_max} лет</p>
+                    <p>Осталось мест: <b>${w.place_count}</b></p>
+                    <p>Дата: ${new Date(w.start_at).toLocaleString('ru-RU')}</p>
+                    <video src="${w.video_url}" preload="metadata" controls></video>
+                `;
+                grid.appendChild(card);
+                lastId = w.id; // Обновляем курсор
+            });
+            
+            btn.innerText = 'Загрузить еще';
+            if (workshops.length < 2) btn.style.display = 'none';
+        }
+
+        // Первичная загрузка
+        loadWorkshops();
+    </script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мои заявки</title>
+    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div class="container">
+        <div class="header-actions">
+            <h2>Мои заявки</h2>
+            <div>
+                <button onclick="window.location.href='create_application.html'">Создать заявку</button>
+                <button class="btn-secondary" onclick="logout()">Выход</button>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Мастер-класс</th>
+                    <th>Дата начала</th>
+                    <th>Оплата</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody id="applicationsTable"></tbody>
+        </table>
+
+        <div class="review-section">
+            <h3>Оставить отзыв</h3>
+            <form id="reviewForm">
+                <div class="form-group">
+                    <label for="reviewText">Ваш отзыв:</label>
+                    <textarea id="reviewText" aria-label="Напишите ваш отзыв" rows="3" placeholder="Напишите ваш отзыв..." required></textarea>
+                </div>
+                <button type="submit" style="width: auto;">Отправить отзыв</button>
+                <div id="reviewMsg"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const userId = sessionStorage.getItem('user_id');
+        if (!userId) window.location.href = 'login.html';
+
+        async function loadApplications() {
+            const res = await fetch(`http://127.0.0.1:5000/api/applications/my?user_id=${userId}`);
+            const apps = await res.json();
+            const tbody = document.getElementById('applicationsTable');
+            tbody.innerHTML = '';
+
+            apps.forEach(app => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${app.id}</td>
+                    <td>${app.course_name}</td>
+                    <td>${app.start_date}</td>
+                    <td>${app.payment_method}</td>
+                    <td><b>${app.status}</b></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = document.getElementById('reviewText').value;
+            const msg = document.getElementById('reviewMsg');
+
+            const res = await fetch('http://127.0.0.1:5000/api/reviews', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, text })
+            });
+
+            if (res.ok) {
+                msg.className = 'success';
+                msg.innerText = 'Отзыв отправлен!';
+                document.getElementById('reviewText').value = '';
+            } else {
+                msg.className = 'error';
+                msg.innerText = 'Ошибка отправки';
+            }
+        });
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        loadApplications();
+    </script>
+</body>
+</html>
